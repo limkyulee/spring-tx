@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Author       : limkyulee
  * Created Date : 2025. 6. 1. 오후 9:34
  * Updated Date : 2025. 6. 1. 오후 9:34
- * Description  : transction basic test
+ * Description  : 트랜잭션 기본 테스트
  * ===========================================
  */
 
