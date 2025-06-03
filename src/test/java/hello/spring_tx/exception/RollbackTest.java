@@ -1,4 +1,4 @@
-package hello.spring_tx.apply;
+package hello.spring_tx.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Author         : pneum
  * Created Date   : 2025-06-03 08:05 pm
  * Updated Date   : 2025-06-03 08:05 pm
- * Description    :
+ * Description    : runtimeException flow vs checkedException flow
  * ===========================================
  */
 
