@@ -98,4 +98,37 @@ public class BasicTxTest {
         log.info("트랜잭션2 롤백");
         transactionManager.rollback(status2);
     }
+
+    /**
+     * 외부에서 시작된 물리적인 트랜잭션의 범위가 내부 트랜잭션까지 넓어진다.
+     * 외부 트랜잭션과 내부 트랜잭션이 하나의 물리 트랜잭션으로 묶이게 된다.
+     */
+    @Test
+    void inner_commit(){
+        log.info("외부 트랜잭션 시작");
+        // 외부 트랜잭션만 물리 트랜잭션을 시작하고 커밋한다.
+        TransactionStatus outer = transactionManager.getTransaction(new DefaultTransactionDefinition());
+        // LOG | outer is New Transaction true
+        log.info("outer is New Transaction {}", outer.isNewTransaction());
+
+        // 외부에서 트랜잭션이 이미 수행 중인데 내부에서 트랜잭션 시작.
+        inner();
+
+        log.info("외부 트랜잭션 커밋");
+        transactionManager.commit(outer);
+    }
+
+    private void inner() {
+        log.info("내부 트랜잭션 시작");
+        // 해당 시점에서 외부 트랜잭션에 참여한다.
+        // LOG | Participating in existing transaction
+        TransactionStatus inner = transactionManager.getTransaction(new DefaultTransactionDefinition());
+        // LOG | inner is New Transaction false
+        log.info("inner is New Transaction {}", inner.isNewTransaction());
+
+        log.info("내부 트랜잭션 커밋");
+        // 해당 시점에서 내부 트랜잭션에 대한 커밋을 실행하지않는다.
+        // 내부 트랜잭션은 물리 트랜잭션을 커밋해서는 안된다. (중복 커밋 불가)
+        transactionManager.commit(inner);
+    }
 }
