@@ -1,6 +1,7 @@
 package hello.spring_tx.propagation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import javax.sql.DataSource;
@@ -19,7 +21,7 @@ import javax.sql.DataSource;
  * File Name      : BasicTxTest
  * Author         : pneum
  * Created Date   : 2025-06-04 10:01 pm
- * Updated Date   : 2025-06-04 10:01 pm
+ * Updated Date   : 2025-06-07 08:37 pm
  * Description    : 기본 트랜잭션 전파 테스트
  * ===========================================
  */
@@ -121,6 +123,7 @@ public class BasicTxTest {
     private void inner() {
         log.info("내부 트랜잭션 시작");
         // 해당 시점에서 외부 트랜잭션에 참여한다.
+        // 기존 트랜잭션에 참여 == 아무것도 하지 않는다.
         // LOG | Participating in existing transaction
         TransactionStatus inner = transactionManager.getTransaction(new DefaultTransactionDefinition());
         // LOG | inner is New Transaction false
@@ -130,5 +133,54 @@ public class BasicTxTest {
         // 해당 시점에서 내부 트랜잭션에 대한 커밋을 실행하지않는다.
         // 내부 트랜잭션은 물리 트랜잭션을 커밋해서는 안된다. (중복 커밋 불가)
         transactionManager.commit(inner);
+    }
+
+    /**
+     * 외부 트랜잭셕 롤백, 내부 트랜잭션 커밋 시, 모든 트랜잭션이 롤백 되어야한다.
+     */
+    @Test
+    void outer_rollback(){
+        log.info("외부 트랜잭션 시작");
+        TransactionStatus outer = transactionManager.getTransaction(new DefaultTransactionDefinition());
+
+        log.info("내부 트랜잭션 시작");
+        // LOG | Participating in existing transaction
+        TransactionStatus inner = transactionManager.getTransaction(new DefaultTransactionDefinition());
+        log.info("내부 트랜잭션 커밋");
+        transactionManager.commit(inner);
+
+        log.info("외부 트랜잭션 롤백");
+        // LOG | Initiating transaction rollback
+        transactionManager.rollback(outer);
+        // LOG | Rolling back JDBC transaction on Connection
+    }
+
+    /**
+     * 외부 트랜잭션 커밋, 내부 트랜잭션 롤백 시, 모든 트랜잭션이 롤백 되어야한다.
+     * 내부 트랜잭션을 롤백하면 실제 물리 트랜잭션은 롤백하지않는다. (실제 물리 트랜잭션은 롤백은 외부 트랜잭션만 가능)
+     * 대신에 기존 트랜잭션을 롤백 전용으로 표시한다.
+     * 결과적으로, 외부 트랜잭션이 커밋을 호출했지만, 전체 트랜잭션이 롤백 전용으로 표시되어있어 물리 트랜잭션을 롤백한다.
+     */
+    @Test
+    void inner_rollback(){
+        log.info("외부 트랜잭션 시작");
+        TransactionStatus outer = transactionManager.getTransaction(new DefaultTransactionDefinition());
+
+        log.info("내부 트랜잭션 시작");
+        // LOG | Participating in existing transaction
+        TransactionStatus inner = transactionManager.getTransaction(new DefaultTransactionDefinition());
+        log.info("내부 트랜잭션 롤백");
+        // LOG | Participating transaction failed - marking existing transaction as rollback-only
+        // 기존 트랜잭션을 롤백 전용으로 표시. (rollbackOnly = true)
+        transactionManager.rollback(inner);
+
+        log.info("외부 트랜잭션 커밋");
+        // LOG | Global transaction is marked as rollback-only but transactional code requested commit
+
+        // transactionManager.commit(outer);
+        // LOG | Initiating transaction rollback
+        // [ERROR] UnexpectedRollbackException | 커밋을 호출했지만 롤백이 호출되었으므로 예외 발생.
+        Assertions.assertThatThrownBy(() -> transactionManager.commit(outer))
+                .isInstanceOf(UnexpectedRollbackException.class);
     }
 }
