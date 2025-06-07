@@ -11,11 +11,11 @@ import java.util.Optional;
 /**
  * ===========================================
  * Project        : hello.spring_tx.propagation
- * File Name       : MemberRepository
+ * File Name      : MemberRepository
  * Author         : pneum
  * Created Date   : 2025-06-07
  * Updated Date   : 2025-06-07
- * Description    :
+ * Description    : 회원 정보 저장
  * ===========================================
  */
 @Slf4j

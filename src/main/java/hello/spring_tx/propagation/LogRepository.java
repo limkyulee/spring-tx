@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * ===========================================
  * Project        : hello.spring_tx.propagation
@@ -13,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Author         : pneum
  * Created Date   : 2025-06-07 10:52 pm
  * Updated Date   : 2025-06-07 10:52 pm
- * Description    :
+ * Description    : db 로그 저장
  * ===========================================
  */
 
@@ -27,11 +29,17 @@ public class LogRepository {
     @Transactional
     public void save(Log logMessage) {
         log.info("log 저장");
-        em.persist(log);
+        em.persist(logMessage);
 
         if(logMessage.getMessage().contains("로그예외")) {
             log.info("log. 저장 시 예외 발생");
             throw  new RuntimeException("예외 발생");
         }
+    }
+
+    public Optional<Log> findByMessage (String message) {
+        return em.createQuery("select l from Log l where l.message = :message", Log.class)
+                .setParameter("message", message)
+                .getResultList().stream().findAny();
     }
 }

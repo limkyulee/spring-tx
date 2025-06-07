@@ -1,6 +1,7 @@
 package hello.spring_tx.propagation;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.Generated;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import lombok.Setter;
  * Author         : pneum
  * Created Date   : 2025-06-07 10:49 pm
  * Updated Date   : 2025-06-07 10:49 pm
- * Description    :
+ * Description    : db 로그 저장 entity
  * ===========================================
  */
 @Entity
@@ -22,7 +23,7 @@ import lombok.Setter;
 public class Log {
 
     @Id
-    @Getter
+    @GeneratedValue
     private Long id;
     private String message;
 
