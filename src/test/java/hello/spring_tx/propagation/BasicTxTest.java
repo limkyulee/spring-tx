@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
@@ -182,5 +183,42 @@ public class BasicTxTest {
         // [ERROR] UnexpectedRollbackException | 커밋을 호출했지만 롤백이 호출되었으므로 예외 발생.
         Assertions.assertThatThrownBy(() -> transactionManager.commit(outer))
                 .isInstanceOf(UnexpectedRollbackException.class);
+    }
+
+    /**
+     * 트랜잭션의 분리.
+     * REQUIRES_NEW 옵션 사용 시, 물리 트랜잭션이 명확하게 분리된다.
+     * REQUIRES_NEW 를 사용하면 데이터베이스 커넥션이 동시에 2개 사용된다는 점을 주의해야한다.
+     */
+    @Test
+    void inner_rollback_requires_new(){
+        log.info("외부 트랜잭션 시작");
+        // LOG | Creating new transaction with name
+        TransactionStatus outer = transactionManager.getTransaction(new DefaultTransactionDefinition());
+        // LOG |  outer.isNewTransaction true
+        log.info("outer.isNewTransaction {}", outer.isNewTransaction());
+
+        // ===================================
+        log.info("내부 트랜잭션 시작");
+        // LOG | Suspending current transaction, creating new transaction with name
+        DefaultTransactionDefinition def = new DefaultTransactionDefinition();
+        // TransactionDefinition.PROPAGATION_REQUIRES_NEW
+        // | 기존 트랜잭션을 무시하고 신규 트랜잭션을 생성한다.
+        def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        // LOG | Acquired Connection
+        // LOG | Switching JDBC Connection
+        TransactionStatus inner = transactionManager.getTransaction(def);
+        // LOG | inner is New Transaction true
+        log.info("inner is New Transaction {}", inner.isNewTransaction());
+
+        log.info("내부 트랜잭션 롤백");
+        // LOG | Initiating transaction rollback (외부 트랜잭션 잠시 보류)
+        transactionManager.rollback(inner);
+        // rollback 했었도 rollbackOnly 하지않는다. (분리된 트랜잭션)
+        // ===================================
+
+        log.info("외부 트랜잭션 커밋");
+        // LOG | Initiating transaction commit (외부 트랜잭션 보류 종료 후, 사용)
+        transactionManager.commit(outer);
     }
 }
