@@ -161,6 +161,10 @@ class MemberServiceTest {
      * memberService | @Transactional ON
      * memberRepository | @Transactional ON
      * logRepository | @Transactional ON(REQUIRES_NEW) Exception
+     * 회원데이터는 저장, 로그 데이터만 롤백된다.
+     * 논리 트랜잭션은 하나라도 롤백되면 관련된 물리 트랜잭션은 롤백된다.
+     * 이 문제는 REQUIRES_NEW 를 통해 해결할 수 있다.
+     * 해당 옵션을 사용하면 두 트랜잭션이 분리되어 논리 트랜잭션 하나가 롤백되더라도 물리 트랜잭션이 롤백되지않는다.
      */
     @Test
     void recoverException_success(){
