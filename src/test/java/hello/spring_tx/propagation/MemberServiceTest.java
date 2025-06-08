@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
@@ -131,6 +132,46 @@ class MemberServiceTest {
 
         // then
         assertTrue(memberRepository.findByUserName(username).isEmpty());
+        assertTrue(logRepository.findByMessage(username).isEmpty());
+    }
+
+    /**
+     * memberService | @Transactional ON
+     * memberRepository | @Transactional ON
+     * logRepository | @Transactional ON Exception
+     * 논리 트랜잭션 중 하나라도 롤백되면 전체 트랜잭션은 롤백된다.
+     * 내부 트랜잭션이 롤백되었는데, 외부 트랜잭션이 커밋되면 UnexpectedRollbackException 예외를 던진다.
+     * 트랜잭션 AOP 도 전달받은 UnexpectedRollbackException 을 클라이언트에 던진다. (rollbackOnly = true)
+     */
+    @Test
+    void recoverException_fail(){
+        // given
+        String username = "로그예외_recoverException_fail";
+
+        // when
+        assertThatThrownBy(() -> memberService.joinV2(username))
+                .isInstanceOf(UnexpectedRollbackException.class);
+
+        // then
+        assertTrue(memberRepository.findByUserName(username).isEmpty());
+        assertTrue(logRepository.findByMessage(username).isEmpty());
+    }
+
+    /**
+     * memberService | @Transactional ON
+     * memberRepository | @Transactional ON
+     * logRepository | @Transactional ON(REQUIRES_NEW) Exception
+     */
+    @Test
+    void recoverException_success(){
+        // given
+        String username = "로그예외_recoverException_success";
+
+        // when
+        memberService.joinV2(username);
+
+        // then
+        assertTrue(memberRepository.findByUserName(username).isPresent());
         assertTrue(logRepository.findByMessage(username).isEmpty());
     }
 }

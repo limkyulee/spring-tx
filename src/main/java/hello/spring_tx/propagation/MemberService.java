@@ -48,6 +48,7 @@ public class MemberService {
      *            | 로그 에러 발생 시, 정상 흐름으로 실행되도록 한다.
      * @param username
      */
+    @Transactional
     public void joinV2(String username){
         Member member = new Member(username);
         Log logMessage = new Log(username);
