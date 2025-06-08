@@ -3,6 +3,7 @@ package hello.spring_tx.propagation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * ===========================================
@@ -27,6 +28,7 @@ public class MemberService {
      * @Description 회원가입 | 트랜잭션을 각각 실행하는 예제
      * @param username
      */
+    @Transactional
     public void joinV1(String username){
         Member member = new Member(username);
         Log logMessage = new Log(username);
